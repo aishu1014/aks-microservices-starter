@@ -1,4 +1,4 @@
-name:.github/workflows/grafana-report.yml
+name: Daily Grafana Report
 on:
   schedule:
     - cron: "0 2 * * *"   # 07:30 IST approx
