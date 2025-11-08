@@ -1,4 +1,4 @@
-name: .github/workflows/terraform-ci.yml
+name: Terraform CI
 on:
   pull_request:
     paths: ['terraform/**']
