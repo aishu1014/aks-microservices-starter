@@ -1,23 +1,33 @@
 name: Build & Deploy to AKS
+
 on:
+  # manual run button in Actions
+  workflow_dispatch:
+  # auto on code changes to app or its Helm chart
   push:
     branches: [ main ]
     paths:
       - 'app/**'
       - 'helm/app/**'
 
+permissions:
+  id-token: write      # for OIDC
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_TAG: ${{ github.sha }}
+  AZURE_RG: ${{ secrets.AZ_RG }}
+  AZURE_AKS: ${{ secrets.AZ_AKS }}
+
 jobs:
   ship:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      packages: write
-    env:
-      REGISTRY: ghcr.io/${{ github.repository_owner }}
-      IMAGE_TAG: ${{ github.sha }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -28,10 +38,10 @@ jobs:
 
       - name: Build & push images
         run: |
-          docker build -t $REGISTRY/demo-api:$IMAGE_TAG ./app/api
-          docker build -t $REGISTRY/demo-web:$IMAGE_TAG ./app/web
-          docker push $REGISTRY/demo-api:$IMAGE_TAG
-          docker push $REGISTRY/demo-web:$IMAGE_TAG
+          docker build -t "$REGISTRY/demo-api:$IMAGE_TAG" ./app/api
+          docker build -t "$REGISTRY/demo-web:$IMAGE_TAG" ./app/web
+          docker push "$REGISTRY/demo-api:$IMAGE_TAG"
+          docker push "$REGISTRY/demo-web:$IMAGE_TAG"
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -40,13 +50,24 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Get AKS creds
+      # Helpful diagnostics so we fail early with a clear message
+      - name: Validate AKS inputs
         run: |
-          az aks get-credentials -g ${{ secrets.AZ_RG }} -n ${{ secrets.AZ_AKS }} --overwrite-existing
+          echo "Subscription:" && az account show -o table
+          echo "Checking Resource Group:" && az group show -n "$AZURE_RG" -o table
+          echo "Checking AKS Cluster:" && az aks show -g "$AZURE_RG" -n "$AZURE_AKS" -o table
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials --resource-group "$AZURE_RG" --name "$AZURE_AKS" --overwrite-existing
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Deploy app
+      - name: Deploy app (Helm)
         run: |
-          helm upgrade --install app ./helm/app             --set image.api.repository=$REGISTRY/demo-api             --set image.web.repository=$REGISTRY/demo-web             --set image.tag=$IMAGE_TAG             --namespace app --create-namespace
+          helm upgrade --install app ./helm/app \
+            --set image.api.repository="$REGISTRY/demo-api" \
+            --set image.web.repository="$REGISTRY/demo-web" \
+            --set image.tag="$IMAGE_TAG" \
+            --namespace app --create-namespace
