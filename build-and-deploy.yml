@@ -1,4 +1,4 @@
-name: .github/workflows/build-and-deploy.yml
+name: /workflows/build-and-deploy.yml
 on:
   push:
     branches: [ main ]
