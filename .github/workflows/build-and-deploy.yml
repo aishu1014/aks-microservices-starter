@@ -50,4 +50,3 @@ jobs:
       - name: Deploy app
         run: |
           helm upgrade --install app ./helm/app             --set image.api.repository=$REGISTRY/demo-api             --set image.web.repository=$REGISTRY/demo-web             --set image.tag=$IMAGE_TAG             --namespace app --create-namespace
-
