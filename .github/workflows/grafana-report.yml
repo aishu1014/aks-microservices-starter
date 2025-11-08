@@ -1,0 +1,21 @@
+name: Daily Grafana Report
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 07:30 IST approx
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch dashboard image
+        run: |
+          NOW=$(date -u +%s000)
+          FROM=$((NOW-86400000))
+          TO=$NOW
+          curl -sSL             -H "Authorization: Bearer ${{ secrets.GRAFANA_API_TOKEN }}"             "https://${{ secrets.GRAFANA_HOST }}/render/d-solo/${{ secrets.GRAFANA_DASH_UID }}/app-overview?from=$FROM&to=$TO&panelId=1&width=1600&height=900"             -o report.png
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grafana-daily-report
+          path: report.png
