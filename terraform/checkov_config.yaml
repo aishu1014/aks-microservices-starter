@@ -1,0 +1,4 @@
+skip-check:
+  - CKV2_AZURE_1  # Example: justify if intentionally using public IPs temporarily
+soft-fail: false
+framework: terraform

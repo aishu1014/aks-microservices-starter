@@ -1,0 +1,29 @@
+namespace: app
+
+image:
+  tag: "latest"
+  api:
+    repository: ghcr.io/ORG/demo-api
+    pullPolicy: IfNotPresent
+  web:
+    repository: ghcr.io/ORG/demo-web
+    pullPolicy: IfNotPresent
+
+replicaCount:
+  api: 2
+  web: 2
+
+service:
+  api:
+    port: 8080
+  web:
+    port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: myapp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
