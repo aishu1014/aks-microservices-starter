@@ -6,7 +6,7 @@ on:
     paths:
       - 'app/**'
       - 'helm/app/**'
-  workflow_dispatch: {}          # <— enables the “Run workflow” button
+  workflow_dispatch: {}     # enables the “Run workflow” button
 
 jobs:
   ship:
@@ -19,8 +19,8 @@ jobs:
     env:
       REGISTRY: ghcr.io/${{ github.repository_owner }}
       IMAGE_TAG: ${{ github.sha }}
-      RG: ${{ secrets.AZ_RG }}           # resource group that contains the AKS cluster
-      AKS: ${{ secrets.AZ_AKS }}         # AKS cluster name
+      RG: ${{ secrets.AZ_RG }}        # resource group containing AKS
+      AKS: ${{ secrets.AZ_AKS }}      # AKS cluster name
 
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # Helpful validation so you get a clear message if names are wrong
+      # one clear validation step
       - name: Validate AKS inputs
         run: |
           echo "== Subscription =="
