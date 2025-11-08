@@ -1,4 +1,4 @@
-/workflows/build-and-deploy.yml
+name: Build & Deploy 
 on:
   push:
     branches: [ main ]
