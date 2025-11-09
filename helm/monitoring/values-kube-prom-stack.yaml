@@ -5,7 +5,7 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: nginx
-    hosts: ["grafana.example.com"]
+    hosts: ["grafana.48.223.233.230.nip.io"]
 
 prometheus:
   prometheusSpec:
