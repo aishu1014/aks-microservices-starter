@@ -1,12 +1,15 @@
 grafana:
-  adminPassword: "CHANGEME"   # Store via --set or SealedSecrets in real setups
+  adminPassword: "CHANGEME"     # change later
   plugins:
     - grafana-image-renderer
+
   ingress:
     enabled: true
     ingressClassName: nginx
-    hosts: ["grafana.48.223.233.230.nip.io"]
+    hosts:
+      - grafana.48.223.233.230.nip.io   # <= use your nip.io host
 
 prometheus:
   prometheusSpec:
     retention: 7d
+
