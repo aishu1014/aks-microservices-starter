@@ -1,7 +1,7 @@
 name: Terraform CI
 
 on:
-  workflow_dispatch: {}             # <-- enables the blue "Run workflow" button
+  workflow_dispatch:
   pull_request:
     paths: ['terraform/**']
   push:
@@ -15,11 +15,15 @@ jobs:
       id-token: write
       contents: read
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
 
-      # Either use OIDC (needs federated credentials) ...
+      # OIDC login (preferred)
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -27,42 +31,42 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # ...or, if you prefer a simple secret JSON, comment the OIDC step above
-      # and use this instead, with a repo secret AZURE_CREDENTIALS:
+      # Or use the JSON creds instead (comment the OIDC step above)
       # - name: Azure login (Service Principal JSON)
       #   uses: azure/login@v2
       #   with:
       #     creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Terraform fmt & validate
-  run: |
-    terraform -chdir=terraform fmt -recursive
+        run: |
+          terraform -chdir=terraform fmt -recursive
 
-    terraform -chdir=terraform init -input=false -upgrade \
-      -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
-      -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
-      -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
-      -backend-config="key=terraform.tfstate"
+          terraform -chdir=terraform init -input=false -upgrade \
+            -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
+            -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
+            -backend-config="key=terraform.tfstate"
 
-    terraform -chdir=terraform validate
+          terraform -chdir=terraform validate
 
       - name: Checkov scan
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: terraform
-          # Remove the next line if you don't have this file:
-          # config_file: terraform/checkov_config.yaml
+          # config_file: terraform/checkov_config.yaml   # only if you have it
           soft_fail: false
 
-      - name: Terraform plan/apply (main only)
-  if: github.ref == 'refs/heads/main'
-  run: |
-    terraform -chdir=terraform init -input=false -upgrade \
-      -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
-      -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
-      -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
-      -backend-config="key=terraform.tfstate"
+      - name: Terraform plan
+        if: github.ref == 'refs/heads/main'
+        run: |
+          terraform -chdir=terraform init -input=false -upgrade \
+            -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
+            -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
+            -backend-config="key=terraform.tfstate"
 
-    terraform -chdir=terraform plan -out=tfplan
-    terraform -chdir=terraform apply -auto-approve tfplan
-          terraform apply -auto-approve tfplan
+          terraform -chdir=terraform plan -out=tfplan
+
+      - name: Terraform apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform -chdir=terraform apply -auto-approve tfplan
