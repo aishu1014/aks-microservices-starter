@@ -35,11 +35,16 @@ jobs:
       #     creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Terraform fmt & validate
-        run: |
-          cd terraform
-          terraform fmt -check
-          terraform init -input=false -upgrade
-          terraform validate
+  run: |
+    terraform -chdir=terraform fmt -recursive
+
+    terraform -chdir=terraform init -input=false -upgrade \
+      -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
+      -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
+      -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
+      -backend-config="key=terraform.tfstate"
+
+    terraform -chdir=terraform validate
 
       - name: Checkov scan
         uses: bridgecrewio/checkov-action@v12
@@ -50,9 +55,14 @@ jobs:
           soft_fail: false
 
       - name: Terraform plan/apply (main only)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          cd terraform
-          terraform init -input=false -upgrade
-          terraform plan -out=tfplan
+  if: github.ref == 'refs/heads/main'
+  run: |
+    terraform -chdir=terraform init -input=false -upgrade \
+      -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
+      -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
+      -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
+      -backend-config="key=terraform.tfstate"
+
+    terraform -chdir=terraform plan -out=tfplan
+    terraform -chdir=terraform apply -auto-approve tfplan
           terraform apply -auto-approve tfplan
