@@ -1,21 +1,16 @@
-name: Daily Grafana Report
-on:
-  schedule:
-    - cron: "0 2 * * *"   # 07:30 IST approx
-  workflow_dispatch:
+- name: Fetch dashboard image
+  env:
+    GRAFANA_URL: ${{ secrets.GRAFANA_URL }}             # e.g. http://<grafana-external-ip>
+    GRAFANA_TOKEN: ${{ secrets.GRAFANA_API_TOKEN }}     # service account token
+    DASH_UID: ${{ secrets.GRAFANA_DASHBOARD_UID }}      # e.g. kubeview, or from Share > Link (d/<UID>/...)
+    PANEL_ID: ${{ secrets.GRAFANA_PANEL_ID }}           # e.g. 1
+  run: |
+    NOW=$(date -u +%s000)
+    FROM=$((NOW-86400000))
+    TO=$NOW
 
-jobs:
-  report:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fetch dashboard image
-        run: |
-          NOW=$(date -u +%s000)
-          FROM=$((NOW-86400000))
-          TO=$NOW
-          curl -sSL             -H "Authorization: Bearer ${{ secrets.GRAFANA_API_TOKEN }}"             "https://${{ secrets.GRAFANA_HOST }}/render/d-solo/${{ secrets.GRAFANA_DASH_UID }}/app-overview?from=$FROM&to=$TO&panelId=1&width=1600&height=900"             -o report.png
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: grafana-daily-report
-          path: report.png
+    URL="$GRAFANA_URL/render/d-solo/$DASH_UID/_?from=$FROM&to=$TO&panelId=$PANEL_ID&width=1600&height=900"
+    echo "Rendering: $URL"
+
+    # -f to fail on 4xx/5xx, -sS for quiet but show errors, -L to follow redirects
+    curl -fsSL -H "Authorization: Bearer $GRAFANA_TOKEN" "$URL" -o report.png
