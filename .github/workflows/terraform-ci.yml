@@ -1,5 +1,7 @@
 name: Terraform CI
+
 on:
+  workflow_dispatch: {}             # <-- enables the blue "Run workflow" button
   pull_request:
     paths: ['terraform/**']
   push:
@@ -12,15 +14,25 @@ jobs:
     permissions:
       id-token: write
       contents: read
+
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+
+      # Either use OIDC (needs federated credentials) ...
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ...or, if you prefer a simple secret JSON, comment the OIDC step above
+      # and use this instead, with a repo secret AZURE_CREDENTIALS:
+      # - name: Azure login (Service Principal JSON)
+      #   uses: azure/login@v2
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Terraform fmt & validate
         run: |
@@ -33,7 +45,8 @@ jobs:
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: terraform
-          config_file: terraform/checkov_config.yaml
+          # Remove the next line if you don't have this file:
+          # config_file: terraform/checkov_config.yaml
           soft_fail: false
 
       - name: Terraform plan/apply (main only)
