@@ -6,13 +6,14 @@ terraform {
       version = "~> 4.0"
     }
   }
-  backend "azurerm" {
-    # Fill these with your remote state details (Portal -> Storage Account)
-    resource_group_name  = var.tf_state_rg
-    storage_account_name = var.tf_state_sa
-    container_name       = var.tf_state_container
-    key                  = "terraform.tfstate"
-  }
+  # backend "azurerm" {
+  #   resource_group_name  = var.tf_state_rg
+  #   storage_account_name = var.tf_state_sa
+  #   container_name       = var.tf_state_container
+  #   key                  = "terraform.tfstate"
+  # }
 }
 
-provider "azurerm" { features {} }
+provider "azurerm" {
+  features {}
+}
