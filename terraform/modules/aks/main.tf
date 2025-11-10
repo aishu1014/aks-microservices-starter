@@ -7,13 +7,18 @@ variable "node_vm_size" { type = string }
 variable "subnet_id" { type = string }
 variable "network_plugin" { type = string, default = "azure" }
 variable "network_policy" { type = string, default = "azure" }
-variable "rbac_enabled" { type = bool, default = true }
-variable "oidc_issuer_enabled" { type = bool, default = true }
+variable "rbac_enabled" {
+  type    = bool
+  default = true
+}
+variable "oidc_issuer_enabled" {
+  type    = bool
+  default = true
+}
 variable "workload_identity_enabled" {
   type    = bool
   default = true
 }
-
 variable "local_account_disabled" {
   type    = bool
   default = true
