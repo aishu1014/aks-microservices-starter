@@ -16,9 +16,7 @@ Daily Grafana dashboard export using GitHub Actions
 
 GHCR container registry build + push pipeline
 
-This README explains everything the interviewer needs to evaluate your assignment.
-
-📁 Repository Structure
+Repository Structure
 .github/workflows/     # Terraform CI, App Build+Deploy CI, Daily Grafana Report
 terraform/             # AKS Infrastructure-as-Code
 helm/app/              # Helm chart for api + web microservices
@@ -26,7 +24,7 @@ helm/monitoring/       # Monitoring stack values (Prom+Grafana)
 app/api/               # Demo API service (Python FastAPI)
 app/web/               # Demo web frontend (Nginx static site)
 
-1) ⭐ Azure Portal Bootstrap
+1) Azure Portal Bootstrap
 
 Before running Terraform:
 
@@ -44,7 +42,7 @@ Example container name: tfstate
 
 You used the Storage Account to store Terraform state remotely.
 
-2) ⭐ GitHub Setup
+2) GitHub Setup
 
 Inside Settings → Secrets & Variables → Actions, add:
 
@@ -72,7 +70,7 @@ GRAFANA_DASH_UID
 
 These allow GitHub Actions to export daily Grafana PNG reports.
 
-3) ⭐ Terraform Deployment (via GitHub Actions)
+3) Terraform Deployment (via GitHub Actions)
 
 Edit backend values inside:
 
@@ -98,7 +96,7 @@ Output
 ✔ RBAC
 ✔ (Optional) ACR
 
-4) ⭐ Install Ingress + Monitoring (Azure Cloud Shell)
+4)  Install Ingress + Monitoring (Azure Cloud Shell)
 
 Open Azure Cloud Shell and run:
 
@@ -121,7 +119,7 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
 
 Grafana becomes available via Ingress (once DNS is configured).
 
-5) ⭐ Deploying the Microservices App (CI/CD)
+5) Deploying the Microservices App (CI/CD)
 
 Whenever you push changes to:
 
@@ -156,7 +154,7 @@ Result:
 ✔ Web application served via Ingress
 ✔ API reachable at /api/health
 
-6) ⭐ Daily Grafana Dashboard Export (CI/CD)
+6) Daily Grafana Dashboard Export (CI/CD)
 
 A scheduled GitHub Action runs daily:
 
@@ -174,7 +172,7 @@ GRAFANA_DASH_UID
 
 This fulfills the report generation requirement.
 
-7) ⭐ Screenshots 
+7) Screenshots 
 
 I have already added the  all required screenshots.
 
@@ -202,7 +200,7 @@ CI/CD
 ✔ Daily report job success
 
 
-8) ⭐ Notes & Helpful Tips
+8) Notes 
 
 Replace placeholder ingress hosts when going live
 
@@ -216,12 +214,11 @@ Use AGIC instead of NGINX
 
 Enable TLS with cert-manager
 
-9) ⭐ Cleanup (optional)
+9) Cleanup (optional)
 
 To avoid Azure costs:
 
 terraform destroy
-
 
 Or delete the resource group:
 
