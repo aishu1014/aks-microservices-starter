@@ -9,7 +9,8 @@ This repository contains a fully working AKS microservices deployment including:
 •	Daily Grafana dashboard export using GitHub Actions
 •	GHCR container registry build + push pipeline
 ________________________________________
-📁 Repository Structure
+Repository Structure
+
 .github/workflows/     # Terraform CI, App Build+Deploy CI, Daily Grafana Report
 terraform/             # AKS Infrastructure-as-Code
 helm/app/              # Helm chart for api + web microservices
