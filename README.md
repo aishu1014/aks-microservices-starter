@@ -1,79 +1,107 @@
-AKS Microservices Starter
+AKS Microservices Starter (Assignment Submission)
 
-A simple, assignment-ready implementation for deploying a microservices application on Azure Kubernetes Service (AKS) using Terraform, Helm, and GitHub Actions.
-It includes networking, CI security scanning (Checkov), ingress, monitoring (Prometheus + Grafana), and an optional daily Grafana dashboard export.
+This repository contains a fully working AKS microservices deployment including:
 
-Repository Structure
-.github/workflows   # Terraform CI, App build & deploy, Daily Grafana export
-app/                # Demo microservices (api + web) + Dockerfiles
-helm/               # Helm charts for app, ingress, monitoring
-monitoring/         # Values, dashboards, helpers for Grafana/Prometheus
-terraform/          # Full AKS infrastructure provisioning
+Terraform for AKS + VNet + Node Pools
 
-Requirements
+Checkov security scanning in CI
 
-Azure Subscription
+Helm deployment for api + web
 
-GitHub repo with Actions enabled
+Ingress-NGINX setup
 
-Azure CLI, Helm, kubectl (Cloud Shell recommended)
+Prometheus + Grafana monitoring
 
-(Optional) OIDC-based GitHub → Azure authentication
+Daily Grafana dashboard export using GitHub Actions
 
-Terraform remote backend (Azure Storage Account)
+GHCR container registry build + push pipeline
 
-Azure Portal Bootstrap (UI)
-Create Terraform state backend
+This README explains everything the interviewer needs to evaluate your assignment.
+
+📁 Repository Structure
+.github/workflows/     # Terraform CI, App Build+Deploy CI, Daily Grafana Report
+terraform/             # AKS Infrastructure-as-Code
+helm/app/              # Helm chart for api + web microservices
+helm/monitoring/       # Monitoring stack values (Prom+Grafana)
+app/api/               # Demo API service (Python FastAPI)
+app/web/               # Demo web frontend (Nginx static site)
+
+1) ⭐ Azure Portal Bootstrap
+
+Before running Terraform:
+
+Create a Resource Group
 
 Create a Storage Account
 
-Create a Blob Container (example: tfstate)
+Create a Blob Container
 
-Optional
+Example container name: tfstate
 
-Create an ACR (if not using GHCR)
+(Optional) Create ACR (if not using GHCR)
 
-Set up Entra ID groups for RBAC access
+(Optional) Configure RBAC / Entra ID Groups
 
-2️⃣ GitHub Repository Setup
+You used the Storage Account to store Terraform state remotely.
 
-In Settings → Secrets and variables → Actions, add:
+2) ⭐ GitHub Setup
 
-Required for Terraform + Deployment
-Secret	Description
-AZURE_TENANT_ID	Azure Tenant
-AZURE_SUBSCRIPTION_ID	Subscription ID
-AZURE_CLIENT_ID	GitHub OIDC App Registration
-AZ_RG	Resource group for AKS
-AZ_AKS	AKS cluster name
-Required after Grafana becomes available
-Secret	Description
-GRAFANA_API_TOKEN	API token for dashboard export
-GRAFANA_HOST	Grafana URL
-GRAFANA_DASH_UID	Dashboard UID to export
+Inside Settings → Secrets & Variables → Actions, add:
 
-Ensure GitHub Actions is enabled.
+Terraform + AKS Access
 
-3️⃣ Terraform Setup (Backend + Variables)
+AZURE_TENANT_ID
 
-Edit terraform/variables.tf and set:
+AZURE_SUBSCRIPTION_ID
 
-tf_state_rg
+AZURE_CLIENT_ID (OIDC-enabled)
 
-tf_state_sa
+AZ_RG → Name of your resource group (example: aks-demo-rg)
 
-tf_state_container
+AZ_AKS → Cluster name (example: aksdemo-aks)
 
-cluster name, region, networking values
+Monitoring / Reporting
 
-Push to main → GitHub Actions will run Terraform Plan + Apply
-Result: AKS + VNet + Nodepool + supporting resources.
+Add these once Grafana is deployed:
 
-4️⃣ Install Ingress + Monitoring (Cloud Shell)
+GRAFANA_HOST
 
-Open Azure Cloud Shell (Bash):
+GRAFANA_API_TOKEN
 
-Connect to AKS
+GRAFANA_DASH_UID
+
+These allow GitHub Actions to export daily Grafana PNG reports.
+
+3) ⭐ Terraform Deployment (via GitHub Actions)
+
+Edit backend values inside:
+
+terraform/variables.tf
+
+Push commit → GitHub Actions automatically runs:
+
+terraform init
+
+terraform validate
+
+terraform plan
+
+terraform apply
+
+Checkov security scan
+
+Output
+
+✔ AKS Cluster
+✔ VNet + subnets
+✔ Node pool
+✔ RBAC
+✔ (Optional) ACR
+
+4) ⭐ Install Ingress + Monitoring (Azure Cloud Shell)
+
+Open Azure Cloud Shell and run:
+
 az aks get-credentials -g <rg> -n <aks> --overwrite-existing
 
 Install Ingress-NGINX
@@ -82,95 +110,119 @@ helm repo update
 helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace
 
-Install Monitoring (Prometheus + Grafana)
+Install Prometheus + Grafana
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
+
 helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   -n monitoring --create-namespace \
   -f helm/monitoring/values-kube-prom-stack.yaml
 
 
-Grafana + Prometheus become available through your Ingress once hosts are configured.
+Grafana becomes available via Ingress (once DNS is configured).
 
-5️⃣ Deploy the Microservices App (CI/CD)
+5) ⭐ Deploying the Microservices App (CI/CD)
 
-The Build & Deploy workflow triggers on:
+Whenever you push changes to:
 
-any commit in app/
+app/api/
 
-any commit in helm/app/
+app/web/
 
-Workflow tasks:
+helm/app/
 
-Build Docker images
+GitHub Actions automatically:
 
-Push images to GHCR (or ACR)
+Builds Docker images
 
-Run helm upgrade --install for the app chart
+Pushes them to GHCR:
 
-Once deployed:
+ghcr.io/aishu1014/demo-api:latest
 
-Update DNS for your api and web hosts
+ghcr.io/aishu1014/demo-web:latest
 
-Update DNS for Grafana host
+Runs:
 
-Verify ingress, services, and pods
+helm upgrade --install app ./helm/app
 
-6️⃣ Daily Grafana Report (Optional)
+Applies ingress rules:
 
-After Grafana is running:
+/ → web
 
-Add secrets
-GRAFANA_HOST, GRAFANA_API_TOKEN, GRAFANA_DASH_UID
+/api → api
 
-The scheduled workflow exports a daily PNG snapshot of the dashboard
+Result:
 
-The PNG will appear in Actions → Daily Grafana Report → Artifacts
+✔ Web application served via Ingress
+✔ API reachable at /api/health
 
-🔧 Troubleshooting
-Ingress shows no EXTERNAL-IP
-kubectl get svc -n ingress-nginx
-kubectl describe svc ingress-nginx-controller -n ingress-nginx
+6) ⭐ Daily Grafana Dashboard Export (CI/CD)
 
-App unreachable?
+A scheduled GitHub Action runs daily:
 
-Check service names:
+Fetches last 24-hour PNG screenshot from Grafana dashboard
 
-kubectl get svc -n app
-kubectl get ingress -n app
+Saves it as a workflow artifact
+
+Uses:
+
+GRAFANA_API_TOKEN
+
+GRAFANA_HOST
+
+GRAFANA_DASH_UID
+
+This fulfills the report generation requirement.
+
+7) ⭐ Screenshots 
+
+I have already added the  all required screenshots.
+
+Terraform & Infrastructure
+
+✔ GitHub Actions Terraform plan/apply
+✔ Terraform Checkov scan results
+✔ Azure Portal screenshot of AKS cluster
+✔ Storage account with tfstate
+
+Kubernetes Deployment
+
+✔ kubectl get pods -n app
+✔ kubectl get svc -n app
+✔ kubectl get ingress -n app
+✔ Ingress external IP shown
+
+Monitoring
+
+✔ Grafana dashboard screenshot
+
+CI/CD
+
+✔ GitHub Actions build + deploy logs
+✔ Daily report job success
 
 
-Verify DNS hostnames match Helm values
+8) ⭐ Notes & Helpful Tips
 
-Grafana not loading?
-kubectl get pods -n monitoring
-kubectl get ingress -n monitoring
+Replace placeholder ingress hosts when going live
 
-Terraform backend errors
+Add ServiceMonitor and PodMonitor for custom API metrics
 
-Ensure Storage Account, container, and key exist
+For production:
 
-Recheck secrets in GitHub Actions
+Use private AKS
 
-🧼 Clean-up
+Use AGIC instead of NGINX
+
+Enable TLS with cert-manager
+
+9) ⭐ Cleanup (optional)
 
 To avoid Azure costs:
 
 terraform destroy
 
 
-Or run the “Terraform Destroy” workflow (if included).
+Or delete the resource group:
 
-📌 Notes / Recommendations
-
-Replace placeholder hosts in Helm values before exposing to internet
-
-Use ServiceMonitor / PodMonitor to collect app metrics
-
-For production:
-
-use private AKS,
-
-add cert-manager,
-
-switch to AGIC if needed
+az group delete -n <rg>
